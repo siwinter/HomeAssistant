@@ -37,6 +37,22 @@ sensor:
         value_template: "{{ 50 }}"      # 50 ist der Anfangswert, der  vom Skript aktualisiert wird
         unit_of_measurement: "%"
 
+##---------> mail_notifier wird benötigt um bei Systemausfall eingestellte Nutzer zu informieren
+notify:
+  - name: "mail_notifier"               # from elsewhere
+    platform: smtp
+    server: "xyz"
+    timeout: 15
+    sender: "xyz"
+    encryption: starttls
+    username: "xyz"
+    password: "xyz"
+    recipient:
+      - "xyz"
+      - "xyz"
+    sender_name: "xyz"
+
+
 """
 #
 # Das Skript erzeugt

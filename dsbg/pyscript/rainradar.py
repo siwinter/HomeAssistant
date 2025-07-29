@@ -35,17 +35,18 @@ location = '/deutschland/niederkruechten/kapelle/DE3205889.html'
 if (Testkonfiguration == True ) : log.warning("rainradar Version %s läuft mit TESTDATEN", version)
 else: log.info("rainradar Version %s start", version)
 
+rainAlarm = "off"
 
 @time_trigger("period(now + 17sec, 5min)")    # Update every 5 min
 def update_web_sensor():
-
+    global rainAlarm
     url = 'https://www.wetter.com' + location + '#niederschlag'
 
     txt = ""
 
     try:
         if (Testkonfiguration == True ) :
-            log.debug("get Data from testfile pyscript/web.data")
+            log.warning("get Data from testfile pyscript/web.data")
             fd = os.open("pyscript/web.data", os.O_RDWR)
             data = os.fdopen(fd, "r")
             txt = data.read()

@@ -1,0 +1,100 @@
+esphome:
+  name: wzlightctrl1
+  friendly_name: wzLightCtrl1
+
+esp8266:
+  board: d1_mini
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_pwd
+
+wifi:
+  networks:
+    - ssid: !secret 1_wifi_ssid
+    - password: !secret 1_wifi_password
+    - ssid: !secret 2_wifi_ssid
+    - password: !secret 2_wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret ap_ssid
+    password: !secret ap_password
+
+captive_portal:
+
+switch:
+  - platform: gpio
+    name: "pin2"
+    pin:
+      number: D4      # GPIO02
+      inverted: true
+
+remote_receiver:
+      pin:
+        number: D6
+      dump:
+#        - raw
+        - rc_switch
+      tolerance: 50%
+      buffer_size: 256
+#      filter: 50us
+      filter: 250us
+      idle: 4ms
+
+binary_sensor:
+  - platform: remote_receiver
+#    name: light1 on
+    id: lightA_on
+    rc_switch_raw:
+      protocol: 1
+      code: '000101010000010101010001'
+    on_press:
+      then:
+        - homeassistant.action:
+            action: switch.turn_on
+            data:
+              entity_id: switch.wzlight_a_2
+  - platform: remote_receiver
+#    name: light1_off
+    id: lightA_off
+    rc_switch_raw:
+      protocol: 1
+      code: '000101010000010101010100'
+    on_press:
+        - homeassistant.action:
+            action: switch.turn_off
+            data:
+              entity_id: switch.wzlight_a_2
+
+  - platform: remote_receiver
+#    name: light1 on
+    id: lightB_on
+    rc_switch_raw:
+      protocol: 1
+      code: '000101010001000101010001'
+    on_press:
+      then:
+        - homeassistant.action:
+            action: switch.turn_on
+            data:
+              entity_id: switch.wzlight_c_3
+  - platform: remote_receiver
+#    name: light1_off
+    id: lightB_off
+    rc_switch_raw:
+      protocol: 1
+      code: '000101010001000101010100'
+    on_press:
+        - homeassistant.action:
+            action: switch.turn_off
+            data:
+              entity_id: switch.wzlight_c_3

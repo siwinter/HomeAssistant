@@ -1,0 +1,144 @@
+#######################################################################
+#
+#  Vorlage für ESP32-C3 (LUATos)
+#    mit boardspezifischen Erweiterung (2 LEDs, Boot-Buton)
+#
+#######################################################################
+
+esphome:
+  name: luatos-2
+  friendly_name: luatos_2
+
+esp32:
+  board: airm2m_core_esp32c3
+  framework:
+    type: arduino
+
+api:
+  encryption:
+    key: !secret api_key
+
+# Enable logging
+logger:
+
+ota:
+  - platform: esphome
+    password: !secret ota_pwd
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret ap_ssid
+    password: !secret ap_password
+
+captive_portal:
+
+# Built In LEDs    
+switch:
+  - platform: gpio
+    name: "pin13"
+    pin:
+      number: 13
+      ignore_pin_validation_error: true
+
+  - platform: gpio
+    name: "pin12"
+    pin:
+      number: 12
+      ignore_pin_validation_error: true
+
+# BOOT button
+#binary_sensor:
+#  - platform: gpio
+#    pin: GPIO09
+#    name: "Boot Btn"
+
+#one_wire:
+#  - platform: gpio
+#    pin: GPIO18
+
+i2c:
+  sda: GPIO04
+  scl: GPIO05
+  scan: true
+  id: bus_a
+
+sensor:
+  - platform: wifi_signal              # Sensor für WiFi Signalstärke
+    name: "RSSI"
+    icon: "mdi:access-point"
+    update_interval: 60s
+
+#  - platform: dallas_temp
+#    name: temperature
+#    update_interval: 120s
+
+  - platform: bme280_i2c
+    temperature:
+      name: "BME280 Temperature"
+    pressure:
+      name: "BME280 Pressure"
+    humidity:
+      name: "BME280 Humidity"
+    address: 0x76
+
+#sensor:
+#  - platform: dht
+#    pin: GPIO18
+#    model: DHT22
+#    temperature:
+#      name: "dht Temperatur"
+#    humidity:
+#      name: "dht Luftfeuchtigkeit"
+#    update_interval: 60s
+
+remote_receiver:
+  rmt_channel: 2
+  pin:
+    number: GPIO18
+    inverted: true
+#  dump: all
+  dump: [nec, jvc]
+
+  on_nec:
+    then:
+      - homeassistant.service:
+          service: pyscript.wzlight_1
+          data:
+            address: !lambda return (to_string(x.address));
+            command: !lambda return (to_string(x.command));
+    # Trigger 1: Beispiel-Kommando vom NEC-Protokoll
+    # Du siehst im Log die Ausgabe 'Received NEC: address=0xFF00, command=0xF30C'.
+#    - address: '0xFF00'
+#      command: '0xF30C'
+#      then:
+        # Ruft den Home Assistant Service auf.
+        # "pyscript.markise_steuern" startet das Python-Skript 'markise_steuern.py'.
+#        - homeassistant.service:
+#            service: pyscript.markise_steuern
+            # Die Daten können an das Pyscript übergeben werden.#
+#            data:
+ #             aktion: "ausfahren"
+#              quelle: "fernbedienung"
+#  
+#    - protocol: NEC # Anstelle einer Nummer wird hier der Protokollname verwendet.
+#      address: '0xFF00'
+#      command: '0xF30C'
+#      then:
+#        - homeassistant.service:
+#            service: pyscript.wzlight_1
+#            # Im "data"-Block kannst du Parameter an dein Pyscript übergeben.
+            # Diese werden im Skript als 'kwargs' empfangen.
+#            data:
+#              action: "on"
+#              source: "rc_remote"  
+
+#binary_sensor:
+#  - platform: remote_receiver
+#    name: "rc_nec_1"
+#    nec:
+#      address: 0xFF00
+#      command: 0xF30C

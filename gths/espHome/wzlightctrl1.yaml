@@ -1,3 +1,19 @@
+#######################################################################
+#
+#  433MHz Empfänger für einen Sender zur Steuerung von Funksteckdosen
+#    au fder Basis eines ESP8266 D1 mini
+#
+#  Im Homeassistant muss es ein pyscript geben, dass den Service
+#  pyscript.wzrc_rc_switch bereitstellt.
+#
+#  Dem ESPHome-Gerät muss erlaubt sein, Home Assistant-Aktionen auszuführen.
+#  Das wird im Homeassistant für das Gerät eingestellt.
+#
+#  Mit den lambda-Ausdrücken werden die Parameter aus der C++-Implementierung
+#  gelesen, in einen String (einer Dezimalzahl) umgewandelt und als Parameter
+#  an den Service übergeben. 
+#
+#######################################################################
 esphome:
   name: wzlightctrl1
   friendly_name: wzLightCtrl1
@@ -39,62 +55,21 @@ switch:
       inverted: true
 
 remote_receiver:
-      pin:
-        number: D6
-      dump:
-#        - raw
-        - rc_switch
-      tolerance: 50%
-      buffer_size: 256
+  pin:
+    number: D6
+  dump:
+#     - raw
+    - rc_switch
+  tolerance: 50%
+  buffer_size: 256
 #      filter: 50us
-      filter: 250us
-      idle: 4ms
+  filter: 250us
+  idle: 4ms
 
-binary_sensor:
-  - platform: remote_receiver
-#    name: light1 on
-    id: lightA_on
-    rc_switch_raw:
-      protocol: 1
-      code: '000101010000010101010001'
-    on_press:
-      then:
-        - homeassistant.action:
-            action: switch.turn_on
-            data:
-              entity_id: switch.wzlight_a_2
-  - platform: remote_receiver
-#    name: light1_off
-    id: lightA_off
-    rc_switch_raw:
-      protocol: 1
-      code: '000101010000010101010100'
-    on_press:
-        - homeassistant.action:
-            action: switch.turn_off
-            data:
-              entity_id: switch.wzlight_a_2
-
-  - platform: remote_receiver
-#    name: light1 on
-    id: lightB_on
-    rc_switch_raw:
-      protocol: 1
-      code: '000101010001000101010001'
-    on_press:
-      then:
-        - homeassistant.action:
-            action: switch.turn_on
-            data:
-              entity_id: switch.wzlight_c_3
-  - platform: remote_receiver
-#    name: light1_off
-    id: lightB_off
-    rc_switch_raw:
-      protocol: 1
-      code: '000101010001000101010100'
-    on_press:
-        - homeassistant.action:
-            action: switch.turn_off
-            data:
-              entity_id: switch.wzlight_c_3
+  on_rc_switch:
+    then:
+      - homeassistant.service:
+          service: pyscript.wzrc_rc_switch
+          data:
+            protocol: !lambda return (to_string(x.protocol));          # !lambda nutz c++ Inline Code. Das Ergebnis 
+            code: !lambda return (to_string(x.code));                  # wird hier Parametern des Services zugewiesen

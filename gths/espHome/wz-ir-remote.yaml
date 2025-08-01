@@ -1,0 +1,83 @@
+#######################################################################
+#
+#  IR-Fernbedienungsempfänger für ESP32-C3 (LUATos)
+#    mit boardspezifischen Erweiterung (2 LEDs, Boot-Buton)
+#
+#  Im Homeassistant muss es ein pyscript geben, dass den Service
+#  wzrc_infrarot bereitstellt.
+#
+#  Dem ESPHome-Gerät muss erlaubt sein, Home Assistant-Aktionen auszuführen.
+#  Das wird im Homeassistant für das Gerät eingestellt.
+#
+#  Mit den lambda-Ausdrücken werden die Parameter aus der C++-Implementierung
+#  gelesen, in einen String (einer Dezimalzahl) umgewandelt und als Parameter
+#  an den Service übergeben. 
+#
+#######################################################################
+
+esphome:
+  name: wz-ir-remote
+  friendly_name: wz_ir_remote
+
+esp32:
+  board: airm2m_core_esp32c3
+  framework:
+    type: arduino
+
+api:
+  encryption:
+    key: !secret api_key
+
+# Enable logging
+logger:
+
+ota:
+  - platform: esphome
+    password: !secret ota_pwd
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+# Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: !secret ap_ssid
+    password: !secret ap_password
+
+captive_portal:
+
+# Built In LEDs    
+switch:
+  - platform: gpio
+    name: "pin13"
+    pin:
+      number: 13
+      ignore_pin_validation_error: true
+
+  - platform: gpio
+    name: "pin12"
+    pin:
+      number: 12
+      ignore_pin_validation_error: true
+
+sensor:
+  - platform: wifi_signal              # Sensor für WiFi Signalstärke
+    name: "RSSI"
+    icon: "mdi:access-point"
+    update_interval: 60s
+
+remote_receiver:
+  rmt_channel: 2        # for ESP32 C3 (channel 0,1 for transmitter, 2,3 for receiver)
+  pin:
+    number: GPIO18
+    inverted: true
+#  dump: all             # dump all received messages
+  dump: [nec, jvc]       # dump only messages of NEC and JVC remote controls
+
+  on_nec:
+    then:
+      - homeassistant.service:
+          service: pyscript.wzrc_nec_infrared
+          data:
+            address: !lambda return (to_string(x.address));  # !lambda nutz c++ Inline Code. Das Ergebnis 
+            command: !lambda return (to_string(x.command));  # wird hier Parametern des Services zugewiesen

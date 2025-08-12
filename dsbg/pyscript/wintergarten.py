@@ -1,4 +1,4 @@
-# Version 1.3
+# Version 1.3.1
 #
 # Das Skript steuert im Automodus abhängig von der Beleuchtung die Position des Beschattungsrollos.
 # Bei Regen und starkem Wind wird das Rollo grundsätzlich eingefahren
@@ -79,7 +79,7 @@ import os
 import aiohttp
 
 version = "1.3.1"
-Testkonfiguration = True
+Testkonfiguration = False
 
 url_wgWet = 'http://192.168.20.155/restart'
 url_wgRol = 'http://192.168.20.156/restart'
@@ -297,11 +297,11 @@ class coverControl :
         if (self.checkWindMsg in [2,3,5,10]) :
             try:
                 async with aiohttp.ClientSession() as session:
-                async with session.get(url_wgRol) as resp:
-                    resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+                    async with session.get(url_wgRol) as resp:
+                        resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+                log.info("wgRol reseted")
             except Exception as e:
                 outTxt = outTxt + + "\nRestart Windmesser nicht möglich\n" + str(e)
-            log.info("wgRol reseted")
         if (self.checkWindMsg == 3) :
             if (windAlarm in self.alarm) :
                 self.alarm.discard(windAlarm)
@@ -315,8 +315,9 @@ class coverControl :
         if (self.checkLightMsg == 3) :
             try:
                 async with aiohttp.ClientSession() as session:
-                async with session.get(url_wgWet) as resp:
-                    resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+                    async with session.get(url_wgWet) as resp:
+                        resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+                log.info("wgWet reseted")
             except Exception as e:
                 outTxt = outTxt + + "\nRestart Lichtsensor nicht möglich\n" + str(e)
         if (self.checkLightMsg == 144) : self.checkLightMsg =  0

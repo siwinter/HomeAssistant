@@ -76,10 +76,13 @@ notify:
 #      inf/wgRol/rollo {integer}
 
 import os
+import aiohttp
 
-version = "1.3"
+version = "1.3.1"
 Testkonfiguration = True
 
+url_wgWet = 'http://192.168.20.155/restart'
+url_wgRol = 'http://192.168.20.156/restart'
 
 c_light_time = 300      # 300 * 5sec = 15min muss es zu hell oder zu dunkel sein, ehe das Rollo bewegt wird
 c_wind_time  = 900      # 15min
@@ -269,23 +272,21 @@ class coverControl :
         log.debug("processWind %i mit counter %i", wind, self.windCounter)
         self.checkWindMsg = 0
         if (not (windAlarm in self.alarm)):
-#            log.debug('windalarm off')
             if (wind > c_windy_max) :
                 self.windCounter = self.windCounter + 1
             elif (wind < c_windy_min) :
                 self.windCounter = 0
             if (self.windCounter == 3) :
                 self.windCounter = c_wind_time
-#                log.debug('windalarm on')
+                log.info('windalarm on')
                 self.set_alarm(windAlarm)
         else :
-            log.debug('windalarm')
             if (wind < c_windy_min) :
                 self.windCounter = self.windCounter - 1
             else :
                 self.windCounter = c_wind_time
             if (self.windCounter <= 0) :
-                log.debug('reset windalarm')
+                log.info('reset windalarm')
                 self.reset_alarm(windAlarm)
 
     def checkSystem(self) :
@@ -293,18 +294,45 @@ class coverControl :
         outTxt = ""
         if (self.checkWindMsg == 1) :
             outTxt = outTxt + "\nWindmesser ist ausgefallen"
+        if (self.checkWindMsg in [2,3,5,10]) :
+            try:
+                async with aiohttp.ClientSession() as session:
+                async with session.get(url_wgRol) as resp:
+                    resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+            except Exception as e:
+                outTxt = outTxt + + "\nRestart Windmesser nicht möglich\n" + str(e)
+            log.info("wgRol reseted")
+        if (self.checkWindMsg == 3) :
+            if (windAlarm in self.alarm) :
+                self.alarm.discard(windAlarm)
+                self.windCounter = 0
+                sensor.wgrol_position = "50"
+                outTxt = outTxt + "\nWindalarm zurückgesetzt"
         if (self.checkWindMsg == 144) : self.checkWindMsg =  0
+
         if (self.checkLightMsg == 1) :
-            outTxt = outTxt + "\nLichtmesser ist ausgefallen"
+            outTxt = outTxt + "\nLichtsensor ist ausgefallen"
+        if (self.checkLightMsg == 3) :
+            try:
+                async with aiohttp.ClientSession() as session:
+                async with session.get(url_wgWet) as resp:
+                    resp.raise_for_status() # Löst einen Fehler bei schlechten HTTP-Statuscodes aus (z.B. 404, 500)
+            except Exception as e:
+                outTxt = outTxt + + "\nRestart Lichtsensor nicht möglich\n" + str(e)
         if (self.checkLightMsg == 144) : self.checkLightMsg =  0
 
         if (outTxt != ""):
             log.warning(outTxt)
             try:
-                mailTxt = "Bei der Wintergartensteuerun ist eine Störung aufgetreten" + outTxt
+                mailTxt = "Bei der Wintergartensteuerung ist eine Störung aufgetreten" + outTxt
                 notify.mail_notifier(message=mailTxt, title='Wintergarten Fehler') 
             except:
                 log.warning("error mail not sent")
+        if ((self.checkWindMsg != 0) or (self.checkLightMsg != 0)) :
+            self.set_alarm(systemAlarm)
+        else :
+            self.reset_alarm(systemAlarm)
+
         self.checkWindMsg  = self.checkWindMsg + 1
         self.checkLightMsg = self.checkLightMsg +1
 

@@ -84,7 +84,7 @@ Testkonfiguration = False
 url_wgWet = 'http://192.168.20.155/restart'
 url_wgRol = 'http://192.168.20.156/restart'
 
-c_light_time = 300      # 300 * 5sec = 15min muss es zu hell oder zu dunkel sein, ehe das Rollo bewegt wird
+c_light_time = 180      # 180 * 5sec = 15min muss es zu hell oder zu dunkel sein, ehe das Rollo bewegt wird
 c_wind_time  = 900      # 15min
 c_diagnostic_time = 120 # 10 min
 

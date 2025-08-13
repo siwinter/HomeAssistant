@@ -1,4 +1,4 @@
-# Version 1.3.1
+# Version 1.3.2
 #
 # Das Skript steuert im Automodus abhängig von der Beleuchtung die Position des Beschattungsrollos.
 # Bei Regen und starkem Wind wird das Rollo grundsätzlich eingefahren
@@ -294,7 +294,7 @@ class coverControl :
         outTxt = ""
         if (self.checkWindMsg == 1) :
             outTxt = outTxt + "\nWindmesser ist ausgefallen"
-        if (self.checkWindMsg in [2,3,5,10]) :
+        if (self.checkWindMsg in [2,5,10,30]) :
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url_wgRol) as resp:
@@ -302,7 +302,7 @@ class coverControl :
                 log.info("wgRol reseted")
             except Exception as e:
                 outTxt = outTxt + + "\nRestart Windmesser nicht möglich\n" + str(e)
-        if (self.checkWindMsg == 3) :
+        if (self.checkWindMsg == 3) :  # ermöglicht Bewegung über Dashboard, wenn Systemausfall bei Windalarm
             if (windAlarm in self.alarm) :
                 self.alarm.discard(windAlarm)
                 self.windCounter = 0
@@ -332,7 +332,7 @@ class coverControl :
         if ((self.checkWindMsg != 0) or (self.checkLightMsg != 0)) :
             self.set_alarm(systemAlarm)
         else :
-            self.reset_alarm(systemAlarm)
+            self.alarm.discard(systemAlarm)
 
         self.checkWindMsg  = self.checkWindMsg + 1
         self.checkLightMsg = self.checkLightMsg +1
